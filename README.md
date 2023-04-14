@@ -36,3 +36,9 @@
             * when a drive is connected, format it, and then add everything from the most recently updated drive
         * Option 3
             * do a merge across drives when a drive is connected
+
+## Setup
+1. Install libdotenv. Call "sudo apt-get install libdotenv" in command line or "brew install libdotenv" in terminal
+2. Add .env file in the sazme folder as the server and client code
+3. Update USB Drive location variables "DRIVE1" and "DRIVE2" in the server.c code
+4. 
