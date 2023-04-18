@@ -13,6 +13,8 @@
 
 #define MAX_CHARACTERS 8196
 
+static char port[20], ip_address[100];
+
 void put_request(char* command, int socket_desc) {
   char new_message[MAX_CHARACTERS];
   char server_message[MAX_CHARACTERS];
@@ -96,7 +98,19 @@ void get_request(char* command, int socket_desc) {
 
   // check that remote file path was specified
   if(strings[1] == NULL) {
-    printf("GET command expects a remote file path input\n");
+    // Send the message to server:
+    if(send(socket_desc, command, strlen(command), 0) < 0){
+      printf("Unable to send message\n");
+      return;
+    }
+    
+    // Receive the server's response:
+    if(recv(socket_desc, server_message, sizeof(server_message), 0) < 0){
+      printf("Error while receiving server's msg\n");
+      return;
+    }
+    
+    printf("Server's response: %s\n",server_message);
     return;
   }
 

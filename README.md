@@ -38,7 +38,26 @@
             * do a merge across drives when a drive is connected
 
 ## Setup
-1. Install libdotenv. Call "sudo apt-get install libdotenv" in command line or "brew install libdotenv" in terminal
-2. Add .env file in the sazme folder as the server and client code
-3. Update USB Drive location variables "DRIVE1" and "DRIVE2" in the server.c code
-4. 
+1. Update config.txt file
+    1. drive1: USB Drive 1 path (ends with "/")
+    2. drive2: USB Drive 2 path (ends with "/")
+    3. log: name of logging file (recommend: log.txt)
+    4. port: port to create connection (recommend: 2000)
+    5. ip_address: IP Address of the server machine
+    6. Note: do not wrap values in quotations
+2. Run 'make all' to compile server and client code on all machines used to test. Alternatively, run 'make server' on machine running the server and 'make client' on any client machines
+4. On server machine's terminal, run './server'
+5. On a client machine's terminal, run './client <command>'. Replace <command> with an appropriate request to the server. 
+    1. if no <command> is provided in command line, client will be prompted to enter a request
+    
+
+## Quirks
+1. if extra arguments are provided with any of the requests, it will still function. Arguments are based on positioning
+2. Status codes:
+    1. Status = A: succesful
+    2. Status = F: failure
+    3. Status = U: unknown
+3. MD
+    1. if path to a file is provided, the command will fail with "Invalid path specified." response
+    2. if path is empty, the command will fail with "INFO command expects remote file path input." response
+    3. if path with multiple uncreated directories is specified, the command will fail.
