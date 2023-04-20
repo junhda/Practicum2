@@ -14,6 +14,7 @@ if [ $? -eq 0 ]; then
     ./fget MD test1/subtest1
     ./fget PUT test_put.txt test1/subtest1/put.txt
     ./fget PUT example1.txt test2/example.txt
+    ./fget PUT test_put.txt
     ./fget PUT test_put.txt test_remove.txt
     ./fget INFO test1
     ./fget INFO test1/subtest1/put.txt

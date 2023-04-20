@@ -15,6 +15,12 @@
 
 static char port[20], ip_address[100];
 
+/**
+ * @brief takes in client PUT request and reformats it to PUT <remote_path> <local_file_contents>. this is sent to server and the server response is printed to console
+ * 
+ * @param command 
+ * @param socket_desc 
+ */
 void put_request(char* command, int socket_desc) {
   char new_message[MAX_CHARACTERS];
   char server_message[MAX_CHARACTERS];
@@ -28,6 +34,11 @@ void put_request(char* command, int socket_desc) {
   while(token != NULL) {
     strings[j++] = token;
     token = strtok(NULL, " ");
+  }
+
+  // if remote path is missing, set equal to local path
+  if(strings[2] == NULL) {
+    strings[2] = strings[1];
   }
 
   printf("Command: %s\n", strings[0]);
@@ -118,6 +129,13 @@ void put_request(char* command, int socket_desc) {
   printf("Server's response: %s\n",server_message);
 }
 
+/**
+ * @brief updates client GET request to GET <remote_file_path>. This is sent to server, and it waits for the server response. 
+ * The response is then saved in the third argument <local_file_path> which is or isn't specified by client
+ * 
+ * @param command 
+ * @param socket_desc 
+ */
 void get_request(char* command, int socket_desc) {
   char new_message[MAX_CHARACTERS];
   char server_message[MAX_CHARACTERS];
@@ -195,6 +213,13 @@ void get_request(char* command, int socket_desc) {
   fclose(fnew);
 }
 
+/**
+ * @brief main running method for client program. takes in command line arguments, or prompts for command from client if command line arguments missing
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char *argv[])
 {
   // read environment variables

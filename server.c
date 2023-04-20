@@ -21,6 +21,11 @@ static char drive1[1024], drive2[1024], server_port[20], server_ip_address[100];
 static int socket_desc, client_sock, sync_thread_exit = 0; // global variable for socket descriptor
 static int sync_drives[] = {1, 1};
 
+/**
+ * @brief sigint handler method that closes client and server socket and turns off background syncing thread
+ * 
+ * @param sig_num 
+ */
 static void sigintHandler(int sig_num) {
   printf("\nReceived SIGINT. Closing server.\n");
 
@@ -40,6 +45,12 @@ static void sigintHandler(int sig_num) {
   exit(0);
 }
 
+/**
+ * @brief get method accepts a client GET command, reads the remote file, and returns the contens of the file as a server message string
+ * 
+ * @param command original command from client
+ * @param server_message string pointer to paste response into
+ */
 void get(char* command, char* server_message) {
   // initialize response
   char response[MAX_CHARACTERS];
@@ -107,6 +118,12 @@ void get(char* command, char* server_message) {
   strcpy(server_message, response);
 }
 
+/**
+ * @brief info method accepts a client INFO command, and finds information about a file or directory in the input remote file path argument
+ * 
+ * @param command original command from client
+ * @param server_message string pointer to paste response into
+ */
 void info(char* command, char* server_message) {
   // initialize response
   char response[MAX_CHARACTERS];
@@ -185,6 +202,12 @@ void info(char* command, char* server_message) {
   strcpy(server_message, response);
 }
 
+/**
+ * @brief md method accepts a client MD command; creates a new directory
+ * 
+ * @param command original command from client
+ * @param server_message string pointer to paste response into
+ */
 void md(char* command, char* server_message) {
   // initialize response
   char response[MAX_CHARACTERS];
@@ -307,6 +330,12 @@ void md(char* command, char* server_message) {
   // printf("Server Response MD End: %s", server_message);
 }
 
+/**
+ * @brief put method accepts a client PUT command; takes in input remote path and string arguments and creates a new file at the path location with the string stored inside the file
+ * 
+ * @param command original command from client
+ * @param server_message string pointer to paste response into
+ */
 void put(char* command, char* server_message) {
   // initialize response
   char response[MAX_CHARACTERS];
@@ -411,6 +440,12 @@ void put(char* command, char* server_message) {
   }
 }
 
+/**
+ * @brief rm method accepts a client RM command; removes a file or directory at the input remote path
+ * 
+ * @param command original command from client
+ * @param server_message string pointer to paste response into
+ */
 void rm(char* command, char* server_message) {
   // initialize response
   char response[MAX_CHARACTERS];
@@ -557,6 +592,13 @@ void rm(char* command, char* server_message) {
   }
 }
 
+/**
+ * @brief background thread method that will continuously check if both USB drives are connected. If a drive is reconnected and has become out of sync, 
+ * this thread will resync that drive based on the state of the other drive
+ * 
+ * @param arg null
+ * @return void* 
+ */
 void *drive_sync(void *arg) {
   int drive1_flag = 0;
   int drive2_flag = 0;
@@ -597,6 +639,10 @@ void *drive_sync(void *arg) {
   return NULL;
 }
 
+/**
+ * @brief reads in parameters from the config.txt file
+ * 
+ */
 void initialize_config() {
   // read config variables
   FILE* f = fopen(CONFIG, "r");
@@ -631,6 +677,11 @@ void initialize_config() {
   fclose(f);
 }
 
+/**
+ * @brief main running method for executable file
+ * 
+ * @return int 
+ */
 int main(void)
 {
   // initialize config variables

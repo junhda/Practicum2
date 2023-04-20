@@ -8,6 +8,12 @@
 
 #define PATH_MAX 8196
 
+/**
+ * @brief copies a single file from source location to destination location
+ * 
+ * @param source 
+ * @param destination 
+ */
 void copy_file(const char *source, const char *destination) {
     FILE *src_file = fopen(source, "rb");
     if (src_file == NULL) {
@@ -34,6 +40,12 @@ void copy_file(const char *source, const char *destination) {
     fclose(dst_file);
 }
 
+/**
+ * @brief does a recursive copy of all contents between source directory to destination directory
+ * 
+ * @param source 
+ * @param destination 
+ */
 void sync_folders(const char *source, const char *destination) {
     DIR *src_dir = opendir(source);
     if (src_dir == NULL) {
