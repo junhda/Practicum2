@@ -468,11 +468,6 @@ void rm(char* command, char* server_message) {
     printf("Client did not provide path.\n");
     char resp[] = "RM command expects remote file path input.";
     strcpy(server_message, resp);
-  } else if(strrchr(strings[1], '.') == NULL){
-    // checks if path specifies creating a new file
-    printf("Client provided an invalid path.\n");
-    char resp[] = "Invalid path specified.\n";
-    strcpy(server_message, resp);
   } else {
     // remove file or directory in available drives
     int drive1Update = 0, drive2Update = 0;
