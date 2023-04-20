@@ -1,5 +1,4 @@
 drive1=
 drive2=
-log_file=
 port=2000
-ip_address=
+ip_address=127.0.0.1

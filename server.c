@@ -16,10 +16,12 @@
 
 #define CONFIG "./config.txt"
 #define MAX_CHARACTERS 8196
+#define MAX_CLIENTS 100
 
 static char drive1[1024], drive2[1024], server_port[20], server_ip_address[100];
 static int socket_desc, client_sock, sync_thread_exit = 0; // global variable for socket descriptor
 static int sync_drives[] = {1, 1};
+static pthread_t threads[MAX_CLIENTS];
 
 /**
  * @brief sigint handler method that closes client and server socket and turns off background syncing thread
@@ -37,6 +39,13 @@ static void sigintHandler(int sig_num) {
   // close server socket
   if (socket_desc) {
     close(socket_desc);
+  }
+
+  // close client request threads
+  for(int i = 0; i < MAX_CLIENTS; i++) {
+    if(threads[i] != NULL) {
+      pthread_join(threads[i], NULL);
+    }
   }
 
   // close background thread
@@ -673,6 +682,61 @@ void initialize_config() {
 }
 
 /**
+ * @brief function to handle client request in a separate thread
+ * 
+ * @param arg client socket
+ * @return void* 
+ */
+void* handle_client(void* arg) {
+    int client_socket = *((int*)arg);
+    char server_message[MAX_CHARACTERS], client_message[MAX_CHARACTERS];
+    // Receive client's command:
+    if (recv(client_sock, client_message, 
+            sizeof(client_message), 0) < 0){
+      printf("Couldn't receive\n");
+      return NULL;
+    }
+    printf("Msg from client: %s\n", client_message);
+
+    // Parse client command
+    char message_copy[MAX_CHARACTERS];
+    strcpy(message_copy, client_message);
+    char* token = strtok(message_copy, " ");  // first command word from the client. this should define the command type
+
+    // call different function based on command type
+    if(strcmp(token, "GET") == 0) { // case when GET command called
+      printf("GET command received\n");
+      get(client_message, server_message);
+    } else if(strcmp(token, "INFO") == 0) {
+      printf("INFO command received\n");
+      info(client_message, server_message);
+    } else if(strcmp(token, "MD") == 0) {
+      printf("MD command received\n");
+      md(client_message, server_message);
+    } else if(strcmp(token, "PUT") == 0) {
+      printf("PUT command received\n");
+      put(client_message, server_message);
+    } else if(strcmp(token, "RM") == 0) {
+      printf("RM command received\n");
+      rm(client_message, server_message);
+    } else {
+      strcpy(server_message, token);
+      strcat(server_message, " is not a valid command.\n");
+    }
+
+    // Respond to client:
+    printf("Server message: %s\n", server_message);
+    if (send(client_sock, server_message, strlen(server_message), 0) < 0){
+      printf("Can't send\n");
+      return NULL;
+    }
+    
+    // cleanup client connection
+    close(client_sock);
+    pthread_exit(NULL);
+}
+
+/**
  * @brief main running method for executable file
  * 
  * @return int 
@@ -724,6 +788,7 @@ int main(void)
   // Bind to the set port and IP:
   if(bind(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr))<0){
     printf("Couldn't bind to the port\n");
+    pthread_join(bt, NULL);
     return -1;
   }
   printf("Done with binding\n");
@@ -731,69 +796,45 @@ int main(void)
   // Listen for clients:
   if(listen(socket_desc, 1) < 0){
     printf("Error while listening\n");
+    close(socket_desc);
+    pthread_join(bt, NULL);
     return -1;
   }
   printf("\nListening for incoming connections.....\n");
 
-  while(1) {
+  for(int i = 0; i < MAX_CLIENTS; i++) {
     // Accept an incoming connection:
     client_size = sizeof(client_addr);
     client_sock = accept(socket_desc, (struct sockaddr*)&client_addr, &client_size);
     
     if (client_sock < 0){
       printf("Can't accept\n");
+      close(socket_desc);
+      pthread_join(bt, NULL);
       return -1;
     }
+    
+    // print connection details
     printf("Client connected at IP: %s and port: %i\n", 
           inet_ntoa(client_addr.sin_addr), 
           ntohs(client_addr.sin_port));
-    
-    // Receive client's command:
-    if (recv(client_sock, client_message, 
-            sizeof(client_message), 0) < 0){
-      printf("Couldn't receive\n");
+
+    // start client thread
+    if(pthread_create(&threads[i], NULL, handle_client, (void*)&client_sock) != 0) {
+      printf("client thread creation failed");
+      close(client_sock);
+      close(socket_desc);
+      pthread_join(bt, NULL);
       return -1;
     }
-    printf("Msg from client: %s\n", client_message);
-
-    // Parse client command
-    char message_copy[MAX_CHARACTERS];
-    strcpy(message_copy, client_message);
-    char* token = strtok(message_copy, " ");  // first command word from the client. this should define the command type
-
-    // call different function based on command type
-    if(strcmp(token, "GET") == 0) { // case when GET command called
-      printf("GET command received\n");
-      get(client_message, server_message);
-    } else if(strcmp(token, "INFO") == 0) {
-      printf("INFO command received\n");
-      info(client_message, server_message);
-    } else if(strcmp(token, "MD") == 0) {
-      printf("MD command received\n");
-      md(client_message, server_message);
-    } else if(strcmp(token, "PUT") == 0) {
-      printf("PUT command received\n");
-      put(client_message, server_message);
-    } else if(strcmp(token, "RM") == 0) {
-      printf("RM command received\n");
-      rm(client_message, server_message);
-    } else {
-      strcpy(server_message, token);
-      strcat(server_message, " is not a valid command.\n");
-    }
-
-    // Respond to client:
-    printf("Server message: %s\n", server_message);
-    if (send(client_sock, server_message, strlen(server_message), 0) < 0){
-      printf("Can't send\n");
-      return -1;
-    }
-    
-    // cleanup client connection
-    close(client_sock);
-    memset(server_message, '\0', sizeof(server_message));
-    memset(client_message, '\0', sizeof(client_message));
   }
+
+  // close client request threads and server socket
+  for(int i = 0; i < MAX_CLIENTS; i++) {
+    pthread_join(threads[i], NULL);
+  }
+  close(socket_desc);
+  pthread_join(bt, NULL);
   
   return 0;
 }
