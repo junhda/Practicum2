@@ -826,53 +826,7 @@ int main(void)
       close(socket_desc);
       pthread_join(bt, NULL);
       return -1;
-    } 
-    
-    // // Receive client's command:
-    // if (recv(client_sock, client_message, 
-    //         sizeof(client_message), 0) < 0){
-    //   printf("Couldn't receive\n");
-    //   return -1;
-    // }
-    // printf("Msg from client: %s\n", client_message);
-
-    // // Parse client command
-    // char message_copy[MAX_CHARACTERS];
-    // strcpy(message_copy, client_message);
-    // char* token = strtok(message_copy, " ");  // first command word from the client. this should define the command type
-
-    // // call different function based on command type
-    // if(strcmp(token, "GET") == 0) { // case when GET command called
-    //   printf("GET command received\n");
-    //   get(client_message, server_message);
-    // } else if(strcmp(token, "INFO") == 0) {
-    //   printf("INFO command received\n");
-    //   info(client_message, server_message);
-    // } else if(strcmp(token, "MD") == 0) {
-    //   printf("MD command received\n");
-    //   md(client_message, server_message);
-    // } else if(strcmp(token, "PUT") == 0) {
-    //   printf("PUT command received\n");
-    //   put(client_message, server_message);
-    // } else if(strcmp(token, "RM") == 0) {
-    //   printf("RM command received\n");
-    //   rm(client_message, server_message);
-    // } else {
-    //   strcpy(server_message, token);
-    //   strcat(server_message, " is not a valid command.\n");
-    // }
-
-    // // Respond to client:
-    // printf("Server message: %s\n", server_message);
-    // if (send(client_sock, server_message, strlen(server_message), 0) < 0){
-    //   printf("Can't send\n");
-    //   return -1;
-    // }
-    
-    // // cleanup client connection
-    // close(client_sock);
-    // memset(server_message, '\0', sizeof(server_message));
-    // memset(client_message, '\0', sizeof(client_message));
+    }
   }
 
   // close client request threads and server socket

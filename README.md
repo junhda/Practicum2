@@ -1,63 +1,49 @@
-# Practicum 2
-#### Daniel Jun
-#### CS 5600
-#### 4/20/2023
+# Practicum 2 - File Systen
 
-## Notes
-* don't choose a port number under 1000 (check if the port used is common in TCP)
-    * also will need to set to my local IP (google config)
-    * can also test this using a virtual machine as well
-* when a client connects to a server's port through accept(), this function actually creates another socket for that client connection. This way, the port that was opened by the server is still open for other clients to connect to. this allows multiple clients to connect to a single port
-    * when another client tries to connect to the server while another client is ALREADY connected to the server, the second client will be put in a waiting queue until the client already connected to the server disconnects. servers are single threaded and single client by default.
-        * is there a way to allow multiple clients connect simultaneously? yes. 
-            1. create a fork() for each client so that they are entered into a separate process (1 process per client). not common anymore
-            2. thread per client: each time a new client connects, create a new thread for that client. however, need to consider file and data structure sharing with this one (deadlocks)
-* client sends server a string; server reads the string and performs the stated command
-    * server response to client can be in any format: XML, json, delimited strings, etc 
-    * client takes the server response and then does something with it
-* when running the "client" program, it must be able to take in the input argument as a command line argument rather than the default pattern from the given code
-    * in prompt example, fget is the name of the program
-* syncing 2 USB drives
-    * question 6 says to wite to 2 usb drives at the same time. reads only have to occur from 1 or the other. In the scenario where 1 drive is removed, but the other is not, writes to the server / drives should still succeed. however, now 1 drive will get the write, while the other drive does not. Despite this, when reconnecting the 2nd drive, these drives should be synced
-        * option a
-            * have a scanner thread - scan for differences between 1 and 2
-            * have 1 main drive and an auxillary drive
-        * option 1 - journal it
-            * keep a journal file in the server with a flags for write successful to both drives
-            * prior to any writes, first write to the journal file
-            * now write to the drives
-            * update the flag in the journal file for the drives successfully written to
-            * when a drive is reconnected to the server, read the journal and update the drive in a separate thread by following which journal entries have not been completed for that drive
-            * Syncing thread: a background thread or process that keeps checking if usb1 and usb2 are online (sleep for somewhere between 1 - 5 seconds). 
-                * if a drive is found to not be online, mark that it has been offline
-                * if a drive is connected and the mark previously indicates that it was offline, resync the drives using the journals
-        * Option 2
-            * keep track of the most recently updated drive 
-            * when a drive is connected, format it, and then add everything from the most recently updated drive
-        * Option 3
-            * do a merge across drives when a drive is connected
+This project is a file system where multiple clients can connect to the server and perform basic file operations such as GET, INFO, MD, PUT, and RM on files or directories located on the server.
 
-## Setup
-1. Update config.txt file
-    1. drive1: USB Drive 1 path (ends with "/")
-    2. drive2: USB Drive 2 path (ends with "/")
-    3. log: name of logging file (recommend: log.txt)
-    4. port: port to create connection (recommend: 2000)
-    5. ip_address: IP Address of the server machine
-    6. Note: do not wrap values in quotations
-2. Run 'make all' to compile server and client code on all machines used to test. Alternatively, run 'make server' on machine running the server and 'make client' on any client machines
-4. On server machine's terminal, run './server'
-5. On a client machine's terminal, run './client <command>'. Replace <command> with an appropriate request to the server. 
-    1. if no <command> is provided in command line, client will be prompted to enter a request
-    
+## System Requirements
+* Operating System: Linux or Mac OS X
+* Libraries: pthread, sys/socket.h, netinet/in.h, sys/stat.h, sys/types.h, fcntl.h, arpa/inet.h, signal.h, dirent.h
+* Hardware: two USB drives mounted on the server machine
 
-## Quirks
-1. if extra arguments are provided with any of the requests, it will still function. Arguments are based on positioning
-2. Status codes:
-    1. Status = A: succesful
-    2. Status = F: failure
-    3. Status = U: unknown
-3. MD
-    1. if path to a file is provided, the command will fail with "Invalid path specified." response
-    2. if path is empty, the command will fail with "INFO command expects remote file path input." response
-    3. if path with multiple uncreated directories is specified, the command will fail.
+## Installation
+1. Clone the repository using the following command: git clone https://github.com/junhda/Practicum2.git
+2. Navigate to the project directory
+3. Compile code using command: 'make all'
+4. Update config.txt file
+    1. drive1: path to flash drive 1
+    2. drive2: path to flash drive 2
+    3. port: unique port for TCP/IP connection (try a port > 10000)
+    4. ip_address: public ip address of server
+
+## Usage 
+1. Insert two USB drives into the server machine
+2. Nagicate to the project directory on both server and client machines
+3. Start the server on server machine using command './fserver'
+4. Start the client program on a client machine using command './fget <client_command>'. Replace <client_command> with the appropriate command:
+    1. GET <remote-file-path>               // Retrieve contents of file at remote-file-path
+    2. INFO <remote-file-path>              // Get information about file at remote-file-path
+    3. MD <remote-dir-path>                 // Create new directory at remote-dir-path
+    4. PUT <remote-file-path> <string-data> // Create new file at remote-file-path with contents string-data
+    5.RM <remote-file-path>                // Remove file or directory at remote-file-path
+5. Server will stop in 2 cases: SIGINT signal detected (Ctrl + C) or the Max number of clients have connected to the server. The default max is 1000, and can be updated in server.c
+
+## Project Architecture
+* client.c: This file contains the implementation of the client that connects to the server to perform various file operations.
+* server.c: This file contains the implementation of the server that listens for incoming client connections and serves their requests. Each client request will be processed in a separate thread.
+* sync_folder.h: This file contains the function prototype of sync_folders().
+* config.txt: This file contains the configuration parameters for the system, such as the mount point of the two USB drives, the IP address of the server, and the port number on which the server listens.
+
+## Testing
+1. Set Flash Drives 1 and 2 to be in sync with each other (ie empty both drives)
+2. Add a file 'example1.txt' into both flash drives with the same data inside
+3. On a client machine, run 'bash test.sh', which will run a series of tests for each client command type.
+    1. try testing with both flash drives connected to server
+    2. try testing with flash drive 1 connected flash drive 2 disconnected to server. Then reconnect flash drive 2
+        1. After 1 - 5 seconds, flash drive 2 should be synced to the state of flash drive 1
+    3. try testing with flash drive 2 connected flash drive 1 disconnected to server. Then reconnect flash drive 1.
+        1. After 1 - 5 seconds, flash drive 1 should be synced to the state of flash drive 1
+
+## Project Contributors
+* Daniel Jun
