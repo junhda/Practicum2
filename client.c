@@ -30,36 +30,77 @@ void put_request(char* command, int socket_desc) {
     token = strtok(NULL, " ");
   }
 
+  printf("Command: %s\n", strings[0]);
+  printf("Local Path: %s\n", strings[1]);
+  printf("Remote Path: %s\n", strings[2]);
+
   // check that local file path was specified
   if(strings[1] == NULL) {
     printf("PUT command expects a local file path input");
-    return;
+    strcpy(new_message, strings[0]);
+  } else {
+    // update local file path to remove starting ./ or /
+    char* relpath = strings[1];
+    char relpath_updated[1024];
+    int len = strlen(strings[1]);
+
+    // Check if the relative path starts with "./" or "/"
+    if (strncmp(relpath, "./", 2) == 0) {
+      strcpy(relpath_updated, relpath + 2);
+    } else if (strncmp(relpath, "/", 1) == 0) {
+      strcpy(relpath_updated, relpath + 1);
+    } else {
+      strcpy(relpath_updated, relpath);
+    }
+
+    printf("Relative path: %s\n", relpath_updated);
+
+    // if remote file path argument missing, substitute with local file path
+    if(strings[2] == NULL) {
+      // strcpy(strings[2], relpath_updated);
+      strings[2] = relpath_updated;
+    }
+
+    // recreate the PUT request
+    strcat(new_message, strings[0]);
+    strcat(new_message, " ");
+    strcat(new_message, strings[2]);
+    strcat(new_message, " ");
+
+    // create local path
+    char path[2048], pwd[1024];
+    if (getcwd(pwd, sizeof(pwd)) != NULL) {
+      printf("Current working directory: %s\n", pwd);
+      strcpy(path, pwd);
+      strcat(path, "/");
+      strcat(path, relpath_updated);
+
+      printf("Absolute path: %s\n", path);
+
+      // read contents from local file and add to PUT request
+      FILE* put_file = fopen(path, "r");
+      if(!put_file) {
+        printf("Local file %s does not exist", path);
+        strcpy(new_message, NULL);
+      } else {
+        char buffer[MAX_CHARACTERS];
+        size_t n = fread(buffer, sizeof(char), MAX_CHARACTERS, put_file);
+        if(n == 0) {
+          printf("Failed to read file %s\n", path);
+          fclose(put_file);
+          return;
+        } else {
+          strcat(new_message, buffer);
+          fclose(put_file);
+        }
+      }
+    } else {
+      printf("Could not find current working directory\n");
+      strcpy(new_message, NULL);
+    }
   }
 
-  // if remote file path argument missing, substitute with local file path
-  if(strings[2] == NULL) {
-    strcpy(strings[2], strings[1]);
-  }
-
-  // recreate the PUT request
-  strcat(new_message, strings[0]);
-  strcat(new_message, " ");
-  strcat(new_message, strings[2]);
-  strcat(new_message, " ");
-
-  // read contents from local file and add to PUT request
-  FILE* put_file = fopen(strings[1], "r");
-  if(!put_file) {
-    printf("Local file %s does not exist", strings[1]);
-    strcpy(new_message, NULL);
-  }
-  char* line;
-  while(fgets(line, sizeof(line), put_file)) {
-    strcat(new_message, line);
-    strcat(new_message, "\n");
-  }
-
-  fclose(put_file);
+  
 
   // Send the message to server:
   printf("Sending request: %s\n", new_message);
@@ -232,7 +273,7 @@ int main(int argc, char *argv[])
   }
   
   // Close the socket:
-  close(socket_desc);
+  close(socket_desc); 
   
   return 0;
 }
