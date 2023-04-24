@@ -258,8 +258,9 @@ void initialize_config() {
 int main(int argc, char *argv[])
 {
   // read environment variables
-  int port = port;
-  char* ip_addr = ip_address;
+  initialize_config();
+  int port_no = atoi(port);
+
   // initialize variables
   int socket_desc;
   struct sockaddr_in server_addr;
@@ -281,8 +282,8 @@ int main(int argc, char *argv[])
   
   // Set port and IP the same as server-side:
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(port);
-  server_addr.sin_addr.s_addr = inet_addr(ip_addr);
+  server_addr.sin_port = htons(port_no);
+  server_addr.sin_addr.s_addr = inet_addr(ip_address);
   
   // Send connection request to server:
   if(connect(socket_desc, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0){
