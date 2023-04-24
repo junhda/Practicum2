@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -214,6 +215,40 @@ void get_request(char* command, int socket_desc) {
 }
 
 /**
+ * @brief reads in parameters from the config.txt file
+ * 
+ */
+void initialize_config() {
+  // read config variables
+  FILE* f = fopen("config.txt", "r");
+  if(!f) {
+    perror("Failed to open config file");
+    exit(1);
+  } else {
+    char buffer[1024];
+    while(fgets(buffer, sizeof(buffer), f)) {
+      // printf("Line: %s\n", buffer);
+      // get variable assignments from each line of the config.txt file
+      buffer[strcspn(buffer, "\n")] = '\0';
+      char *key, *value;
+      key = strtok(buffer, "=");
+      value = strtok(NULL, "=");
+
+      // printf("Variable: %s\n", key);
+      // printf("Value: %s\n", value);
+      
+      if(strcmp(key, "port") == 0) {
+        strcpy(port, value);
+      } else if(strcmp(key, "ip_address") == 0) {
+        strcpy(ip_address, value);
+      } 
+    }
+  }
+
+  fclose(f);
+}
+
+/**
  * @brief main running method for client program. takes in command line arguments, or prompts for command from client if command line arguments missing
  * 
  * @param argc 
@@ -223,8 +258,8 @@ void get_request(char* command, int socket_desc) {
 int main(int argc, char *argv[])
 {
   // read environment variables
-  int port = 2000;//atoi(getenv("PORT"));
-  char* ip_addr = "127.0.0.1"; //getenv("IP_ADDRESS");
+  int port = port;
+  char* ip_addr = ip_address;
   // initialize variables
   int socket_desc;
   struct sockaddr_in server_addr;
